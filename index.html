@@ -1,389 +1,861 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Density and the shape of transit coverage</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<style>
-  :root{
-    --paper:#F1F2EE; --panel:#FBFBF9; --ink:#191A15; --muted:#7C7E74; --line:#D8D9D1;
-    --home:#7BA6EC; --dest:#F5897F;                 /* light blue / light red */
-    --home-ink:#4E82D8; --dest-ink:#E86A5F;         /* stronger, for thin lines + text */
-    --home-soft:rgba(123,166,236,0.18); --dest-soft:rgba(245,137,127,0.20);
-    /* Drop your hero image in here:  --hero-image: url('city.jpg'); */
-    --hero-image: linear-gradient(120deg,#dbe4f6 0%,#eef0ea 45%,#f7ddd8 100%);
-  }
-  *{box-sizing:border-box}
-  html,body{margin:0}
-  body{background:var(--paper);color:var(--ink);font-family:"Archivo",system-ui,sans-serif;-webkit-font-smoothing:antialiased;line-height:1.5}
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Density and the shape of transit coverage</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800;900&family=Space+Mono:wght@400;700&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --paper: #F1F2EE;
+      --panel: #FBFBF9;
+      --ink: #191A15;
+      --muted: #7C7E74;
+      --line: #D8D9D1;
+      --home: #7BA6EC;
+      --dest: #F5897F;
+      /* light blue / light red */
+      --home-ink: #4E82D8;
+      --dest-ink: #E86A5F;
+      /* stronger, for thin lines + text */
+      --home-soft: rgba(123, 166, 236, 0.18);
+      --dest-soft: rgba(245, 137, 127, 0.20);
+      /* Drop your hero image in here:  --hero-image: url('city.jpg'); */
+      --hero-image: linear-gradient(120deg, #dbe4f6 0%, #eef0ea 45%, #f7ddd8 100%);
+    }
 
-  /* ---------- HERO (static) ---------- */
-  .hero{position:relative;height:64vh;min-height:400px;display:flex;align-items:flex-end;overflow:hidden;border-bottom:1.5px solid var(--ink)}
-  .hero-bg{position:absolute;inset:0;background:var(--hero-image);background-size:cover;background-position:center}
-  .hero-scrim{position:absolute;inset:0;background:linear-gradient(to top,rgba(241,242,238,.92) 0%,rgba(241,242,238,.55) 40%,rgba(241,242,238,.15) 100%)}
-  .hero-inner{position:relative;z-index:2;width:100%;max-width:1040px;margin:0 auto;padding:0 clamp(20px,5vw,44px) clamp(30px,7vh,64px)}
-  .hero-eyebrow{font-family:"Space Mono",monospace;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);display:flex;gap:.6em;align-items:center;margin-bottom:16px}
-  .hero-eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--dest)}
-  .hero h1{font-weight:900;font-size:clamp(34px,6.5vw,68px);letter-spacing:-.02em;line-height:.98;margin:0 0 .3em;max-width:18ch}
-  .hero h1 .b{color:var(--home-ink)} .hero h1 .r{color:var(--dest-ink)}
-  .hero p{max-width:56ch;font-size:clamp(15px,1.7vw,18px);color:#3a3b34;margin:0}
+    * {
+      box-sizing: border-box
+    }
 
-  /* ---------- DASHBOARD ---------- */
-  .dash{max-width:1040px;margin:0 auto;padding:34px 20px 0}
-  .card{background:var(--panel);border:1.5px solid var(--ink);border-radius:2px;box-shadow:5px 5px 0 rgba(25,26,21,.10);padding:20px}
-  .card h2{font-family:"Space Mono",monospace;font-weight:700;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0 0 4px}
-  .card .sub{font-size:13px;color:var(--muted);margin:0 0 14px}
+    html,
+    body {
+      margin: 0
+    }
 
-  .city-card{padding:16px 16px 10px;margin-bottom:22px}
-  #sky{display:block;width:100%;height:auto}
-  .legend{display:flex;justify-content:center;gap:22px;flex-wrap:wrap;padding:8px 4px 2px;font-family:"Space Mono",monospace;font-size:12.5px;color:var(--muted)}
-  .legend b{display:inline-flex;align-items:center;gap:7px;font-weight:400;color:var(--ink)}
-  .swatch{width:13px;height:13px;border-radius:2px;display:inline-block}
+    body {
+      background: var(--paper);
+      color: var(--ink);
+      font-family: "Archivo", system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.5
+    }
 
-  .controls{margin-bottom:22px}
-  .dctrl{margin-bottom:18px}
-  .dctrl:last-of-type{margin-bottom:0}
-  .dctrl-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px}
-  .dctrl-top label{font-size:15px;font-weight:800}
-  .dctrl-top .lvl{font-family:"Space Mono",monospace;font-size:13px;font-weight:700;padding:1px 8px;border-radius:2px}
-  .lvl.home{color:var(--home-ink);background:var(--home-soft)} .lvl.dest{color:var(--dest-ink);background:var(--dest-soft)}
-  .ends{display:flex;justify-content:space-between;font-family:"Space Mono",monospace;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-top:3px}
+    /* ---------- HERO (static) ---------- */
+    .hero {
+      position: relative;
+      height: 64vh;
+      min-height: 400px;
+      display: flex;
+      align-items: flex-end;
+      overflow: hidden;
+      border-bottom: 1.5px solid var(--ink)
+    }
 
-  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:3px;background:var(--line);border-radius:2px;outline:none;cursor:pointer;margin:6px 0}
-  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--panel);border:2.5px solid var(--ink);cursor:pointer}
-  input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:var(--panel);border:2.5px solid var(--ink);cursor:pointer}
-  input[type=range].home::-webkit-slider-thumb{border-color:var(--home-ink)} input[type=range].home::-moz-range-thumb{border-color:var(--home-ink)}
-  input[type=range].dest::-webkit-slider-thumb{border-color:var(--dest-ink)} input[type=range].dest::-moz-range-thumb{border-color:var(--dest-ink)}
-  input[type=range]:focus-visible{outline:2px solid var(--ink);outline-offset:4px}
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      background: var(--hero-image);
+      background-size: cover;
+      background-position: center
+    }
 
-  details.advanced{margin-top:22px;border-top:1px solid var(--line);padding-top:8px}
-  details.advanced summary{font-family:"Space Mono",monospace;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);cursor:pointer;padding:8px 0;list-style:none;display:flex;align-items:center;gap:8px}
-  details.advanced summary::-webkit-details-marker{display:none}
-  details.advanced summary::before{content:"+";font-weight:700;color:var(--ink)}
-  details.advanced[open] summary::before{content:"−"}
-  .adv-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 24px;padding:12px 0 4px}
-  @media(max-width:560px){.adv-grid{grid-template-columns:1fr}}
-  .actrl-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
-  .actrl-top label{font-size:13px;font-weight:600} .actrl-top .val{font-family:"Space Mono",monospace;font-size:12px;color:var(--muted)}
-  .ctrl-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:4px}
-  .resample{font-family:"Space Mono",monospace;font-weight:700;font-size:11px;letter-spacing:.06em;text-transform:uppercase;background:none;border:1.5px solid var(--ink);color:var(--ink);border-radius:2px;padding:8px 12px;cursor:pointer;white-space:nowrap}
-  .resample:hover{background:var(--ink);color:var(--paper)}
+    .hero-scrim {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(241, 242, 238, .92) 0%, rgba(241, 242, 238, .55) 40%, rgba(241, 242, 238, .15) 100%)
+    }
 
-  .charts{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-bottom:22px}
-  @media(max-width:720px){.charts{grid-template-columns:1fr}}
-  .chart-card h2{margin-bottom:2px}
-  .chartbox{position:relative}
-  canvas.chart{display:block;width:100%;height:auto;cursor:crosshair}
+    .hero-inner {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 0 clamp(20px, 5vw, 44px) clamp(30px, 7vh, 64px)
+    }
 
-  .methodology-wrap{max-width:1040px;margin:0 auto;padding:0 20px 70px}
-  details.methodology{border-top:1.5px solid var(--ink);padding-top:6px}
-  details.methodology summary{font-family:"Space Mono",monospace;font-weight:700;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);cursor:pointer;padding:14px 0;list-style:none;display:flex;align-items:center;gap:8px}
-  details.methodology summary::-webkit-details-marker{display:none}
-  details.methodology summary::before{content:"+";font-weight:700;color:var(--ink)}
-  details.methodology[open] summary::before{content:"−"}
-  .method-body{max-width:70ch;font-size:14.5px;color:#3a3b34;line-height:1.7;padding:6px 0 8px}
-  .method-body h3{font-family:"Archivo",sans-serif;font-weight:800;font-size:16px;color:var(--ink);margin:24px 0 6px}
-  .method-body h3:first-child{margin-top:6px}
-  .method-body p{margin:0 0 12px}
-  .method-body .eq{font-family:"Space Mono",monospace;font-size:13px;color:var(--ink);background:#ecede7;border-left:2px solid var(--line);padding:9px 14px;margin:12px 0;white-space:pre-wrap;overflow-x:auto;line-height:1.6}
-  .method-body code{font-family:"Space Mono",monospace;font-size:12.5px;background:#e9eae4;padding:1px 5px;border-radius:2px}
-  @media(prefers-reduced-motion:reduce){*{transition:none!important}}
-</style>
-</head>
-<body>
+    .hero-eyebrow {
+      font-family: "Space Mono", monospace;
+      font-size: 12px;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      display: flex;
+      gap: .6em;
+      align-items: center;
+      margin-bottom: 16px
+    }
 
-<header class="hero">
-  <div class="hero-bg"></div>
-  <div class="hero-scrim"></div>
-  <div class="hero-inner">
-    <div class="hero-eyebrow"><span class="dot"></span>Transit demand · a thought-experiment</div>
-    <h1>How density bends the <span class="b">transit</span> <span class="r">payoff</span></h1>
-    <p>A toy city on one axis. Two dials — how dense the homes are, how dense the jobs are — reshape how much of the commute a transit network can actually carry.</p>
-  </div>
-</header>
+    .hero-eyebrow .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--dest)
+    }
 
-<main class="dash">
+    .hero h1 {
+      font-weight: 900;
+      font-size: clamp(34px, 6.5vw, 68px);
+      letter-spacing: -.02em;
+      line-height: .98;
+      margin: 0 0 .3em;
+      max-width: 18ch
+    }
 
-  <!-- city view -->
-  <div class="card city-card">
-    <canvas id="sky" aria-label="A one-dimensional city: light-blue home buildings and light-red destination towers along a single axis"></canvas>
-    <div class="legend">
-      <b><span class="swatch" style="background:var(--home)"></span>homes</b>
-      <b><span class="swatch" style="background:var(--dest)"></span>destinations</b>
-    </div>
-  </div>
+    .hero h1 .b {
+      color: var(--home-ink)
+    }
 
+    .hero h1 .r {
+      color: var(--dest-ink)
+    }
 
+    .hero p {
+      max-width: 56ch;
+      font-size: clamp(15px, 1.7vw, 18px);
+      color: #3a3b34;
+      margin: 0
+    }
 
-  <!-- charts -->
-  <div class="charts">
-    <div class="card chart-card">
-      <h2>Coverage by network size</h2>
-      <p class="sub">connect this share of homes &amp; jobs, biggest first</p>
-      <div class="chartbox"><canvas id="chartNet" class="chart" aria-label="Commuters served versus network size"></canvas></div>
-    </div>
-    <div class="card chart-card">
-      <h2>Coverage by core reach</h2>
-      <p class="sub">extend one line this far out from downtown</p>
-      <div class="chartbox"><canvas id="chartReach" class="chart" aria-label="Commuters served versus how far the line reaches from the core"></canvas></div>
-    </div>
-  </div>
+    /* ---------- DASHBOARD ---------- */
+    .dash {
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 34px 20px 0
+    }
 
-  <!-- density controls -->
-  <div class="card controls">
-    <div class="ctrl-head">
-      <h2>Density</h2>
-      <button class="resample" id="resample">↻ Generate new city</button>
-    </div>
-    <p class="sub">Each dial sets how tightly its buildings cluster toward the core and how much they concentrate into a few big towers.</p>
+    .card {
+      background: var(--panel);
+      border: 1.5px solid var(--ink);
+      border-radius: 2px;
+      box-shadow: 5px 5px 0 rgba(25, 26, 21, .10);
+      padding: 20px
+    }
 
-    <div class="dctrl">
-      <div class="dctrl-top"><label for="hd">Home density</label><span class="lvl home" id="hd-v">Medium</span></div>
-      <input type="range" class="home" id="hd" min="0" max="100" step="1" value="45">
-      <div class="ends"><span>spread &amp; even</span><span>packed &amp; towered</span></div>
-    </div>
+    .card h2 {
+      font-family: "Space Mono", monospace;
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 0 0 4px
+    }
 
-    <div class="dctrl">
-      <div class="dctrl-top"><label for="dd">Destination density</label><span class="lvl dest" id="dd-v">High</span></div>
-      <input type="range" class="dest" id="dd" min="0" max="100" step="1" value="70">
-      <div class="ends"><span>spread &amp; even</span><span>packed &amp; towered</span></div>
-    </div>
+    .card .sub {
+      font-size: 13px;
+      color: var(--muted);
+      margin: 0 0 14px
+    }
 
-    <details class="advanced">
-      <summary>Advanced options</summary>
-      <div class="adv-grid">
-        <div><div class="actrl-top"><label for="lh">Home spread · Lₕ</label><span class="val" id="lh-v">5.5</span></div><input type="range" id="lh" min="1" max="8" step="0.1" value="5.5"></div>
-        <div><div class="actrl-top"><label for="sh">Home inequality · σₕ</label><span class="val" id="sh-v">0.54</span></div><input type="range" id="sh" min="0" max="1.4" step="0.05" value="0.54"></div>
-        <div><div class="actrl-top"><label for="ld">Dest spread · L_d</label><span class="val" id="ld-v">2.9</span></div><input type="range" id="ld" min="0.5" max="8" step="0.1" value="2.9"></div>
-        <div><div class="actrl-top"><label for="sg">Dest inequality · σ</label><span class="val" id="sg-v">0.91</span></div><input type="range" id="sg" min="0" max="1.4" step="0.05" value="0.91"></div>
-        <div><div class="actrl-top"><label for="nh">Homes</label><span class="val" id="nh-v">300</span></div><input type="range" id="nh" min="50" max="600" step="10" value="300"></div>
-        <div><div class="actrl-top"><label for="nd">Destinations</label><span class="val" id="nd-v">50</span></div><input type="range" id="nd" min="10" max="150" step="5" value="50"></div>
-      </div>
-    </details>
-  </div>
+    .city-card {
+      padding: 16px 16px 10px;
+      margin-bottom: 22px
+    }
 
-  <section class="methodology-wrap">
-    <details class="methodology">
-      <summary>Methodology</summary>
-      <div class="method-body">
-        <p>Everything on the page is generated from a small toy model of a single city laid out along one line, running from a dense core on the left to the far suburbs on the right. Here is exactly how it works. (Throughout, <code>1[…]</code> is an indicator: 1 when the condition holds, 0 otherwise.)</p>
+    #sky {
+      display: block;
+      width: 100%;
+      height: auto
+    }
 
-        <h3>1. Laying out the city</h3>
-        <p>Each home and each destination is placed on the line at a distance <code>x</code> from the core. Positions are drawn from an exponential distribution, so places are common near the core and thin out with distance:</p>
-        <div class="eq">x = −L · ln(U),    U ~ Uniform(0, 1)</div>
-        <p>The spread <code>L</code> sets the average distance from the core — a larger <code>L</code> pushes places further out, a smaller one packs them in. Homes and destinations each have their own spread, <code>Lₕ</code> and <code>L_d</code>.</p>
+    .legend {
+      display: flex;
+      justify-content: center;
+      gap: 22px;
+      flex-wrap: wrap;
+      padding: 8px 4px 2px;
+      font-family: "Space Mono", monospace;
+      font-size: 12.5px;
+      color: var(--muted)
+    }
 
-        <h3>2. How big each place is</h3>
-        <p>Not every building is the same size. Each home <code>i</code> gets a population <code>pᵢ</code>, and each destination <code>j</code> an attractiveness <code>wⱼ</code>, both drawn from a heavy-tailed (log-normal) distribution so a few are far larger than the rest:</p>
-        <div class="eq">pᵢ = exp(σₕ · zᵢ)      wⱼ = exp(σ · zⱼ),    z ~ Normal(0, 1)</div>
-        <p>The inequality <code>σ</code> controls how lopsided the sizes are: at <code>σ = 0</code> every place is identical; higher values let a handful of giant towers dominate.</p>
+    .legend b {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-weight: 400;
+      color: var(--ink)
+    }
 
-        <h3>3. Who commutes where</h3>
-        <p>Every home sends its residents to exactly one destination, chosen at random but weighted by destination attractiveness — bigger destinations pull more commuters:</p>
-        <div class="eq">P(home i → destination j) = wⱼ / Σₖ wₖ</div>
-        <p>A destination's load is the combined population of every home assigned to it, and the city's total commuters <code>T</code> is the sum of all home populations:</p>
-        <div class="eq">loadⱼ = Σ pᵢ  over homes i assigned to j        T = Σᵢ pᵢ</div>
-        <p>Note that this choice depends only on destination <em>size</em>, not on where the home or destination sits — geography plays no part in who-goes-where.</p>
+    .swatch {
+      width: 13px;
+      height: 13px;
+      border-radius: 2px;
+      display: inline-block
+    }
 
-        <h3>4. The two density dials</h3>
-        <p>Each slider folds spread and inequality into one "density" <code>d</code> from 0 (spread &amp; even) to 1 (packed &amp; towered), through a straight linear map:</p>
-        <div class="eq">Homes:         Lₕ = 8 − 5.5·d,     σₕ = 1.2·d
-Destinations:  L_d = 7.5 − 6.5·d,   σ = 1.3·d</div>
-        <p>Turning a dial up simultaneously pulls that population toward the core and concentrates it into fewer, taller buildings.</p>
+    .controls {
+      margin-bottom: 22px
+    }
 
-        <h3>5. When a commute is "served"</h3>
-        <p>A commute counts as served only when <em>both</em> its ends — home and destination — sit on the transit network. The two charts differ only in how that network grows.</p>
-        <p><strong>Coverage by network size.</strong> The network connects buildings biggest-first. At size <code>s</code>, the <code>s%</code> of home <em>buildings</em> with the largest populations, and the <code>s%</code> of destination <em>buildings</em> with the largest loads, are on the network — a count of buildings ranked by size, not a share of the population. Because these are the biggest buildings, they hold well over <code>s%</code> of the actual commuters (at <code>s = 50</code>, the biggest half of homes holds roughly 70% of residents and the biggest half of destinations receives roughly 90% of trips). Coverage is then the population-weighted share of commutes with both ends connected:</p>
-        <div class="eq">C_net(s) = (1 / T) · Σᵢ pᵢ · 1[home i in top s%] · 1[its destination in top s%]</div>
-        <p><strong>Coverage by core reach.</strong> Instead, a single line extends outward from downtown to a radius <code>R</code>, and everything inside is connected:</p>
-        <div class="eq">R = (s / 100) · X        (X = full city radius)
+    .dctrl {
+      margin-bottom: 18px
+    }
 
-C_reach(s) = (1 / T) · Σᵢ pᵢ · 1[xᵢ ≤ R] · 1[x of its destination ≤ R]</div>
-        <p>In both, a served commute counts for as many people as live in that home, so coverage is measured in commuters, not buildings.</p>
+    .dctrl:last-of-type {
+      margin-bottom: 0
+    }
 
-        <h3>6. The skyline is stylised</h3>
-        <p>The city view is a summary, not a literal scatter. The line is split into bins; within each bin the building heights are proportional to that bin's share of the city total, so the total height is conserved — spreading a population out makes all of its buildings shorter rather than rescaling the tallest one to fill the frame. Roof shapes and window textures are decorative.</p>
-      </div>
-    </details>
-  </section>
-</main>
+    .dctrl-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 7px
+    }
 
-<script>
-(function(){
-  "use strict";
-  const S = { Lh:5.5, Ld:2.2, sigma:0.91, sh:0.54, Nh:300, Nd:50 };
-  const X_MAX = 28, NB = 22;
-  let Uh=[], Ud=[], Ua=[], Zd=[], Zh=[], city=null;
+    .dctrl-top label {
+      font-size: 15px;
+      font-weight: 800
+    }
 
-  const normal = () => { const u1=Math.random()||1e-9,u2=Math.random(); return Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2); };
-  function resample(){
-    Uh=Array.from({length:600},Math.random); Ud=Array.from({length:150},Math.random);
-    Ua=Array.from({length:600},Math.random); Zd=Array.from({length:150},normal); Zh=Array.from({length:600},normal);
-  }
+    .dctrl-top .lvl {
+      font-family: "Space Mono", monospace;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 1px 8px;
+      border-radius: 2px
+    }
 
-  function buildCity(){
-    const hsz=Zh.slice(0,S.Nh).map(z=>Math.exp(S.sh*z));
-    const hx=Uh.slice(0,S.Nh).map(u=>-S.Lh*Math.log(u));
-    const dx=Ud.slice(0,S.Nd).map(u=>-S.Ld*Math.log(u));
-    const w=Zd.slice(0,S.Nd).map(z=>Math.exp(S.sigma*z));
-    const wsum=w.reduce((a,b)=>a+b,0)||1;
-    const cum=[]; let acc=0; for(const wi of w){acc+=wi/wsum;cum.push(acc);} if(cum.length)cum[cum.length-1]=1;
-    const assign=new Array(S.Nh), load=new Array(S.Nd).fill(0);
-    for(let i=0;i<S.Nh;i++){const u=Ua[i];let j=0;while(j<cum.length-1&&u>cum[j])j++;assign[i]=j;load[j]+=hsz[i];}
-    const total=hsz.reduce((a,b)=>a+b,0)||1;
+    .lvl.home {
+      color: var(--home-ink);
+      background: var(--home-soft)
+    }
 
-    // curve 1 — network size (connect biggest homes & hubs first)
-    const homeRank=hsz.map((v,i)=>i).sort((a,b)=>hsz[b]-hsz[a]);
-    const destRank=load.map((l,j)=>j).sort((a,b)=>load[b]-load[a]);
-    const destHomes=Array.from({length:S.Nd},()=>[]); for(let i=0;i<S.Nh;i++)destHomes[assign[i]].push(i);
-    const curveNet=new Array(101); {
-      const hon=new Uint8Array(S.Nh),don=new Uint8Array(S.Nd); let sv=0,nh=0,nd=0;
-      for(let s=0;s<=100;s++){
-        const tnh=Math.round(s/100*S.Nh),tnd=Math.round(s/100*S.Nd);
-        while(nh<tnh){const idx=homeRank[nh];hon[idx]=1;if(don[assign[idx]])sv+=hsz[idx];nh++;}
-        while(nd<tnd){const jd=destRank[nd];don[jd]=1;for(const hi of destHomes[jd])if(hon[hi])sv+=hsz[hi];nd++;}
-        curveNet[s]=sv/total*100;
+    .lvl.dest {
+      color: var(--dest-ink);
+      background: var(--dest-soft)
+    }
+
+    .ends {
+      display: flex;
+      justify-content: space-between;
+      font-family: "Space Mono", monospace;
+      font-size: 10.5px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-top: 3px
+    }
+
+    input[type=range] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 3px;
+      background: var(--line);
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+      margin: 6px 0
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--panel);
+      border: 2.5px solid var(--ink);
+      cursor: pointer
+    }
+
+    input[type=range]::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--panel);
+      border: 2.5px solid var(--ink);
+      cursor: pointer
+    }
+
+    input[type=range].home::-webkit-slider-thumb {
+      border-color: var(--home-ink)
+    }
+
+    input[type=range].home::-moz-range-thumb {
+      border-color: var(--home-ink)
+    }
+
+    input[type=range].dest::-webkit-slider-thumb {
+      border-color: var(--dest-ink)
+    }
+
+    input[type=range].dest::-moz-range-thumb {
+      border-color: var(--dest-ink)
+    }
+
+    input[type=range]:focus-visible {
+      outline: 2px solid var(--ink);
+      outline-offset: 4px
+    }
+
+    details.advanced {
+      margin-top: 22px;
+      border-top: 1px solid var(--line);
+      padding-top: 8px
+    }
+
+    details.advanced summary {
+      font-family: "Space Mono", monospace;
+      font-size: 12px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 8px 0;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 8px
+    }
+
+    details.advanced summary::-webkit-details-marker {
+      display: none
+    }
+
+    details.advanced summary::before {
+      content: "+";
+      font-weight: 700;
+      color: var(--ink)
+    }
+
+    details.advanced[open] summary::before {
+      content: "−"
+    }
+
+    .adv-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px 24px;
+      padding: 12px 0 4px
+    }
+
+    @media(max-width:560px) {
+      .adv-grid {
+        grid-template-columns: 1fr
       }
     }
-    // curve 2 — core reach (one line extending out from downtown)
-    const curveReach=new Array(101); {
-      const hist=new Array(102).fill(0);
-      for(let i=0;i<S.Nh;i++){const t=Math.max(hx[i],dx[assign[i]])/X_MAX*100;hist[Math.min(101,Math.max(0,Math.ceil(t)))]+=hsz[i];}
-      let run=0,bi=0; for(let s=0;s<=100;s++){while(bi<=s){run+=hist[bi];bi++;}curveReach[s]=run/total*100;}
+
+    .actrl-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 4px
     }
-    // bins for the skyline
-    const bins=Array.from({length:NB},(_,i)=>({home:0,dest:0,homeCount:0,destCount:0,i}));
-    const binOf=x=>Math.min(NB-1,Math.floor(x/X_MAX*NB));
-    hx.forEach((x,i)=>{if(x<X_MAX){bins[binOf(x)].home+=hsz[i];bins[binOf(x)].homeCount++;}});
-    dx.forEach((x,j)=>{if(x<X_MAX){bins[binOf(x)].dest+=load[j];bins[binOf(x)].destCount++;}});
-    const maxHome=Math.max(1,...bins.map(b=>b.home)), maxDest=Math.max(1,...bins.map(b=>b.dest));
-    city={curveNet,curveReach,bins,maxHome,maxDest,total};
-  }
 
-  // ---------- skyline ----------
-  const sky=document.getElementById('sky');
-  function shade(hex,f){const n=parseInt(hex.slice(1),16);let r=(n>>16)&255,g=(n>>8)&255,b=n&255;const c=v=>Math.max(0,Math.min(255,Math.round(v*f)));return `rgb(${c(r)},${c(g)},${c(b)})`;}
-  const HOME='#7BA6EC', DEST='#F5897F';
-  function roofTop(ctx,left,y,w,rh,style,col){ctx.fillStyle=col;
-    if(style===1){ctx.beginPath();ctx.moveTo(left-1,y);ctx.lineTo(left+w/2,y-rh);ctx.lineTo(left+w+1,y);ctx.closePath();ctx.fill();}       // peaked
-    else if(style===2){ctx.beginPath();ctx.moveTo(left-1,y);ctx.lineTo(left+w+1,y-rh);ctx.lineTo(left+w+1,y);ctx.closePath();ctx.fill();} // right-angle / shed
-    else{ctx.fillRect(left,y-3,w,3);}}                                                                                                   // flat parapet
-  function building(ctx,left,ground,w,h,hex,kind,seed){
-    const style=seed%3, rh=style===0?3:Math.min(w*0.55,13);
-    const wallH=Math.max(8,h-rh), y=ground-wallH;
-    ctx.fillStyle=hex; ctx.fillRect(left,y,w,wallH);
-    if(kind==='home'){                                                   // homes: small square windows
-      const cols=Math.max(1,Math.floor(w/9)),rows=Math.floor(wallH/13),gx=w/cols;
-      ctx.fillStyle='rgba(255,255,255,0.52)';
-      for(let c=0;c<cols;c++)for(let r=0;r<rows;r++)ctx.fillRect(left+c*gx+gx*0.30,y+r*13+5,gx*0.40,5);
-    } else {                                                             // destinations: horizontal office floor-bands
-      ctx.fillStyle='rgba(255,255,255,0.36)';
-      for(let r=0;r<Math.floor(wallH/9);r++)ctx.fillRect(left+2,y+r*9+4,w-4,3);
+    .actrl-top label {
+      font-size: 13px;
+      font-weight: 600
     }
-    roofTop(ctx,left,y,w,rh,style,shade(hex,0.8));
-  }
-  function houses(ctx,left,ground,w,hex,n,seed){
-    const hw=Math.min(w/n,16),hh=Math.max(15,hw*1.1),rc=shade(hex,0.82);
-    for(let k=0;k<n;k++){const x=left+k*(w/n)+(w/n-hw)/2,y=ground-hh;ctx.fillStyle=hex;ctx.fillRect(x,y,hw,hh);
-      roofTop(ctx,x,y,hw,Math.min(hw*0.6,10),((seed+k)%2)?1:2,rc);}
-  }
-  function drawSkyline(){
-    const ctx=sky.getContext('2d'),dpr=Math.max(1,devicePixelRatio||1);
-    const W=sky.clientWidth||900,H=Math.max(230,Math.round(W*0.32));
-    sky.style.height=H+'px';sky.width=W*dpr;sky.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,W,H);
-    if(!city)return;
-    const ground=H-26,availH=ground-H*0.10, total=city.total, SCALE=availH*1.6;
-    ctx.strokeStyle='rgba(25,26,21,0.20)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,ground+0.5);ctx.lineTo(W,ground+0.5);ctx.stroke();
-    const slot=W/NB,bw=Math.max(9,slot*0.42),gap=slot*0.05,houseCut=availH*0.16;
-    for(let i=0;i<NB;i++){
-      const b=city.bins[i],cx=(i+0.5)*slot;
-      const hH=Math.min(availH,(b.home/total)*SCALE), dH=Math.min(availH,(b.dest/total)*SCALE);
-      const homeLeft=cx-bw-gap/2, destLeft=cx+gap/2;
-      if(b.home>0){ if(hH<houseCut) houses(ctx,homeLeft,ground,bw,HOME,Math.min(3,Math.max(1,b.homeCount)),i*2+1);
-        else building(ctx,homeLeft,ground,bw,hH,HOME,'home',i*2+1); }
-      if(b.dest>0){ if(dH<houseCut) houses(ctx,destLeft,ground,bw,DEST,Math.min(2,Math.max(1,b.destCount)),i*3+2);
-        else building(ctx,destLeft,ground,bw,dH,DEST,'dest',i*3+2); }
+
+    .actrl-top .val {
+      font-family: "Space Mono", monospace;
+      font-size: 12px;
+      color: var(--muted)
     }
-    ctx.font='11px "Space Mono", monospace';ctx.fillStyle='#8f9187';
-    ctx.textAlign='left';ctx.fillText('◄ Downtown',4,H-8);
-    ctx.textAlign='right';ctx.fillText('Suburbs ►',W-4,H-8);
-  }
 
-  // ---------- charts ----------
-  const M={L:42,R:14,T:16,B:30};
-  const charts=[
-    {cv:document.getElementById('chartNet'),   key:'curveNet',   diag:true,  xlabel:'network size', line:'#4E82D8', hover:null},
-    {cv:document.getElementById('chartReach'), key:'curveReach', diag:false, xlabel:'core reach',    line:'#4E82D8', hover:null},
-  ];
-  function drawChart(o){
-    const cv=o.cv, ctx=cv.getContext('2d'), dpr=Math.max(1,devicePixelRatio||1);
-    const W=cv.clientWidth||360, H=Math.max(210,Math.round(W*0.74));
-    cv.style.height=H+'px';cv.width=W*dpr;cv.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,W,H);
-    if(!city)return;
-    const pw=W-M.L-M.R, ph=H-M.T-M.B, xp=s=>M.L+s/100*pw, yp=v=>M.T+(1-v/100)*ph, curve=city[o.key];
-    ctx.font='11px "Space Mono", monospace';
-    ctx.strokeStyle='#E4E5DE';ctx.fillStyle='#9c9e94';ctx.lineWidth=1;ctx.textAlign='right';
-    for(let g=0;g<=100;g+=25){ctx.beginPath();ctx.moveTo(M.L,yp(g));ctx.lineTo(M.L+pw,yp(g));ctx.stroke();ctx.fillText(g+'%',M.L-6,yp(g)+3);}
-    ctx.textAlign='center';for(let g=0;g<=100;g+=50)ctx.fillText(g+'%',xp(g),H-9);
-    if(o.diag){ctx.strokeStyle='#CBCCC4';ctx.setLineDash([4,4]);ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(xp(0),yp(0));ctx.lineTo(xp(100),yp(100));ctx.stroke();ctx.setLineDash([]);}
-    ctx.strokeStyle=o.line;ctx.lineWidth=3;ctx.beginPath();
-    for(let s=0;s<=100;s++){const X=xp(s),Y=yp(curve[s]);s===0?ctx.moveTo(X,Y):ctx.lineTo(X,Y);}ctx.stroke();
-    ctx.fillStyle='#9c9e94';ctx.textAlign='left';ctx.fillText(o.xlabel+' →',M.L,M.T-3);
-    if(o.hover!=null){
-      const s=o.hover, X=xp(s), Y=yp(curve[s]);
-      ctx.strokeStyle='rgba(78,130,216,0.45)';ctx.setLineDash([3,3]);ctx.lineWidth=1;
-      ctx.beginPath();ctx.moveTo(X,yp(0));ctx.lineTo(X,Y);ctx.moveTo(M.L,Y);ctx.lineTo(X,Y);ctx.stroke();ctx.setLineDash([]);
-      ctx.fillStyle=DEST;ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(X,Y,5,0,Math.PI*2);ctx.fill();ctx.stroke();
-      const txt=s+'% → '+Math.round(curve[s])+'% served';
-      ctx.font='700 12px "Space Mono", monospace';ctx.textAlign=s>60?'right':'left';
-      const tx=s>60?X-9:X+9, ty=Math.max(M.T+12,Y-10);
-      ctx.lineWidth=3;ctx.strokeStyle='#fff';ctx.strokeText(txt,tx,ty);ctx.fillStyle='#191A15';ctx.fillText(txt,tx,ty);
+    .ctrl-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 4px
     }
-  }
-  function drawCharts(){charts.forEach(drawChart);}
-  charts.forEach(o=>{
-    o.cv.addEventListener('mousemove',e=>{const r=o.cv.getBoundingClientRect();const pw=r.width-M.L-M.R;
-      let s=Math.round((e.clientX-r.left-M.L)/pw*100);s=Math.max(0,Math.min(100,s));o.hover=s;drawChart(o);});
-    o.cv.addEventListener('mouseleave',()=>{o.hover=null;drawChart(o);});
-  });
 
-  function redrawAll(){drawSkyline();drawCharts();}
-  function rebuild(){buildCity();redrawAll();}
+    .resample {
+      font-family: "Space Mono", monospace;
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      background: none;
+      border: 1.5px solid var(--ink);
+      color: var(--ink);
+      border-radius: 2px;
+      padding: 8px 12px;
+      cursor: pointer;
+      white-space: nowrap
+    }
 
-  // ---------- density <-> params ----------
-  const lvlWord=d=> d<0.34?'Low':d<0.67?'Medium':'High';
-  function mapHome(d){S.Lh=+(8-5.5*d).toFixed(2);S.sh=+(1.2*d).toFixed(2);}
-  function mapDest(d){S.Ld=+(7.5-6.5*d).toFixed(2);S.sigma=+(1.3*d).toFixed(2);}
-  function syncAdv(){
-    const set=(id,v)=>{const el=document.getElementById(id);el.value=v;document.getElementById(id+'-v').textContent=(''+v);};
-    set('lh',S.Lh);set('sh',S.sh);set('ld',S.Ld);set('sg',S.sigma);
-  }
-  document.getElementById('hd').addEventListener('input',e=>{const d=+e.target.value/100;mapHome(d);document.getElementById('hd-v').textContent=lvlWord(d);syncAdv();rebuild();});
-  document.getElementById('dd').addEventListener('input',e=>{const d=+e.target.value/100;mapDest(d);document.getElementById('dd-v').textContent=lvlWord(d);syncAdv();rebuild();});
+    .resample:hover {
+      background: var(--ink);
+      color: var(--paper)
+    }
 
-  // advanced direct controls
-  function advBind(id,key,fmt){const el=document.getElementById(id),out=document.getElementById(id+'-v');
-    el.addEventListener('input',()=>{S[key]=parseFloat(el.value);out.textContent=fmt(S[key]);rebuild();});}
-  advBind('lh','Lh',v=>v.toFixed(1));advBind('sh','sh',v=>v.toFixed(2));
-  advBind('ld','Ld',v=>v.toFixed(1));advBind('sg','sigma',v=>v.toFixed(2));
-  advBind('nh','Nh',v=>String(v));advBind('nd','Nd',v=>String(v));
-  document.getElementById('resample').addEventListener('click',()=>{resample();rebuild();});
+    .charts {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 22px;
+      margin-bottom: 22px
+    }
 
-  const debounce=(fn,ms=60)=>{let t;return()=>{clearTimeout(t);t=setTimeout(fn,ms);};};
-  new ResizeObserver(debounce(drawSkyline)).observe(sky);
-  charts.forEach(o=>new ResizeObserver(debounce(()=>drawChart(o))).observe(o.cv));
+    @media(max-width:720px) {
+      .charts {
+        grid-template-columns: 1fr
+      }
+    }
 
-  // init
-  resample();
-  mapHome(+document.getElementById('hd').value/100); mapDest(+document.getElementById('dd').value/100);
-  document.getElementById('hd-v').textContent=lvlWord(+document.getElementById('hd').value/100);
-  document.getElementById('dd-v').textContent=lvlWord(+document.getElementById('dd').value/100);
-  syncAdv(); buildCity(); redrawAll();
-  requestAnimationFrame(redrawAll);
-})();
-</script>
+    .chart-card h2 {
+      margin-bottom: 2px
+    }
+
+    .chartbox {
+      position: relative
+    }
+
+    canvas.chart {
+      display: block;
+      width: 100%;
+      height: auto;
+      cursor: crosshair
+    }
+
+    .methodology-wrap {
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 0 20px 70px
+    }
+
+    details.methodology {
+      border-top: 1.5px solid var(--ink);
+      padding-top: 6px
+    }
+
+    details.methodology summary {
+      font-family: "Space Mono", monospace;
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 14px 0;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 8px
+    }
+
+    details.methodology summary::-webkit-details-marker {
+      display: none
+    }
+
+    details.methodology summary::before {
+      content: "+";
+      font-weight: 700;
+      color: var(--ink)
+    }
+
+    details.methodology[open] summary::before {
+      content: "−"
+    }
+
+    .method-body {
+      max-width: 70ch;
+      font-size: 14.5px;
+      color: #3a3b34;
+      line-height: 1.7;
+      padding: 6px 0 8px
+    }
+
+    .method-body h3 {
+      font-family: "Archivo", sans-serif;
+      font-weight: 800;
+      font-size: 16px;
+      color: var(--ink);
+      margin: 24px 0 6px
+    }
+
+    .method-body h3:first-child {
+      margin-top: 6px
+    }
+
+    .method-body p {
+      margin: 0 0 12px
+    }
+
+    .method-body .eq {
+      font-family: "Space Mono", monospace;
+      font-size: 13px;
+      color: var(--ink);
+      background: #ecede7;
+      border-left: 2px solid var(--line);
+      padding: 9px 14px;
+      margin: 12px 0;
+      white-space: pre-wrap;
+      overflow-x: auto;
+      line-height: 1.6
+    }
+
+    .method-body code {
+      font-family: "Space Mono", monospace;
+      font-size: 12.5px;
+      background: #e9eae4;
+      padding: 1px 5px;
+      border-radius: 2px
+    }
+
+    @media(prefers-reduced-motion:reduce) {
+      * {
+        transition: none !important
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header class="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-scrim"></div>
+    <div class="hero-inner">
+      <div class="hero-eyebrow"><span class="dot"></span>A very simple model for public transit demand</div>
+      <h1>How <span class="b">density</span> affects returns on <span class="r">transit expansion</span></h1>
+      <p></p>
+    </div>
+  </header>
+
+  <main class="dash">
+
+    <!-- city view -->
+    <div class="card city-card">
+      <canvas id="sky"
+        aria-label="A one-dimensional city: light-blue home buildings and light-red destination towers along a single axis"></canvas>
+      <div class="legend">
+        <b><span class="swatch" style="background:var(--home)"></span>homes</b>
+        <b><span class="swatch" style="background:var(--dest)"></span>destinations</b>
+      </div>
+    </div>
+
+
+
+    <!-- charts -->
+    <div class="charts">
+      <div class="card chart-card">
+        <h2>Coverage by network size</h2>
+        <p class="sub">connect this share of homes &amp; jobs, biggest first</p>
+        <div class="chartbox"><canvas id="chartNet" class="chart"
+            aria-label="Commuters served versus network size"></canvas></div>
+      </div>
+      <div class="card chart-card">
+        <h2>Coverage by core reach</h2>
+        <p class="sub">extend one line this far out from downtown</p>
+        <div class="chartbox"><canvas id="chartReach" class="chart"
+            aria-label="Commuters served versus how far the line reaches from the core"></canvas></div>
+      </div>
+    </div>
+
+    <!-- density controls -->
+    <div class="card controls">
+      <div class="ctrl-head">
+        <h2>Density</h2>
+        <button class="resample" id="resample">↻ Generate new city</button>
+      </div>
+      <p class="sub">Each dial sets how tightly its buildings cluster toward the core and how much they concentrate into
+        a few big towers.</p>
+
+      <div class="dctrl">
+        <div class="dctrl-top"><label for="hd">Home density</label><span class="lvl home" id="hd-v">Medium</span></div>
+        <input type="range" class="home" id="hd" min="0" max="100" step="1" value="45">
+        <div class="ends"><span>spread &amp; even</span><span>packed &amp; towered</span></div>
+      </div>
+
+      <div class="dctrl">
+        <div class="dctrl-top"><label for="dd">Destination density</label><span class="lvl dest" id="dd-v">High</span>
+        </div>
+        <input type="range" class="dest" id="dd" min="0" max="100" step="1" value="70">
+        <div class="ends"><span>spread &amp; even</span><span>packed &amp; towered</span></div>
+      </div>
+
+      <details class="advanced">
+        <summary>Advanced options</summary>
+        <div class="adv-grid">
+          <div>
+            <div class="actrl-top"><label for="lh">Home spread · Lₕ</label><span class="val" id="lh-v">5.5</span></div>
+            <input type="range" id="lh" min="1" max="8" step="0.1" value="5.5">
+          </div>
+          <div>
+            <div class="actrl-top"><label for="sh">Home inequality · σₕ</label><span class="val" id="sh-v">0.54</span>
+            </div><input type="range" id="sh" min="0" max="1.4" step="0.05" value="0.54">
+          </div>
+          <div>
+            <div class="actrl-top"><label for="ld">Dest spread · L_d</label><span class="val" id="ld-v">2.9</span></div>
+            <input type="range" id="ld" min="0.5" max="8" step="0.1" value="2.9">
+          </div>
+          <div>
+            <div class="actrl-top"><label for="sg">Dest inequality · σ</label><span class="val" id="sg-v">0.91</span>
+            </div><input type="range" id="sg" min="0" max="1.4" step="0.05" value="0.91">
+          </div>
+          <div>
+            <div class="actrl-top"><label for="nh">Homes</label><span class="val" id="nh-v">300</span></div><input
+              type="range" id="nh" min="50" max="600" step="10" value="300">
+          </div>
+          <div>
+            <div class="actrl-top"><label for="nd">Destinations</label><span class="val" id="nd-v">50</span></div><input
+              type="range" id="nd" min="10" max="150" step="5" value="50">
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <section class="methodology-wrap">
+      <details class="methodology">
+        <summary>Methodology</summary>
+        <div class="method-body">
+          <p>This model was created with Claude Opus 4.8. Everything on the page is generated from a small toy model of
+            a single city laid out along one line, running from a dense core on the left to the far suburbs on the
+            right. Here is exactly how it works. </p>
+
+          <h3>1. Laying out the city</h3>
+          <p>Each home and each destination is placed on the line at a distance <code>x</code> from the core. Positions
+            are drawn from an exponential distribution, so places are common near the core and thin out with distance:
+          </p>
+          <div class="eq">x = −L · ln(U), U ~ Uniform(0, 1)</div>
+          <p>The spread <code>L</code> sets the average distance from the core — a larger <code>L</code> pushes places
+            further out, a smaller one packs them in. Homes and destinations each have their own spread, <code>Lₕ</code>
+            and <code>L_d</code>.</p>
+
+          <h3>2. How big each place is</h3>
+          <p>Not every building is the same size. Each home <code>i</code> gets a population <code>pᵢ</code>, and each
+            destination <code>j</code> an attractiveness <code>wⱼ</code>, both drawn from a heavy-tailed (log-normal)
+            distribution so a few are far larger than the rest:</p>
+          <div class="eq">pᵢ = exp(σₕ · zᵢ) wⱼ = exp(σ · zⱼ), z ~ Normal(0, 1)</div>
+          <p>The inequality <code>σ</code> controls how lopsided the sizes are: at <code>σ = 0</code> every place is
+            identical; higher values let a handful of giant towers dominate.</p>
+
+          <h3>3. Who commutes where</h3>
+          <p>Every home sends its residents to exactly one destination, chosen at random but weighted by destination
+            attractiveness — bigger destinations pull more commuters:</p>
+          <div class="eq">P(home i → destination j) = wⱼ / Σₖ wₖ</div>
+          <p>A destination's load is the combined population of every home assigned to it, and the city's total
+            commuters <code>T</code> is the sum of all home populations:</p>
+          <div class="eq">loadⱼ = Σ pᵢ over homes i assigned to j T = Σᵢ pᵢ</div>
+          <p>Note that this choice depends only on destination <em>size</em>, not on where the home or destination sits
+            — geography plays no part in who-goes-where.</p>
+
+          <h3>4. The two density dials</h3>
+          <p>Each slider folds spread and inequality into one "density" <code>d</code> from 0 (spread &amp; even) to 1
+            (packed &amp; towered), through a straight linear map:</p>
+          <div class="eq">Homes: Lₕ = 8 − 5.5·d, σₕ = 1.2·d
+            Destinations: L_d = 7.5 − 6.5·d, σ = 1.3·d</div>
+          <p>Turning a dial up simultaneously pulls that population toward the core and concentrates it into fewer,
+            taller buildings.</p>
+
+          <h3>5. When a commute is "served"</h3>
+          <p>A commute counts as served by public transit only when its home and destination are on the transit
+            network. The two charts differ only in how that network grows.</p>
+          <p><strong>Coverage by network size.</strong> The network connects buildings biggest-first. At size
+            <code>s</code>, the <code>s%</code> of home <em>buildings</em> with the largest populations, and the
+            <code>s%</code> of destination <em>buildings</em> with the largest loads, are on the network. Coverage is
+            then the population-weighted share of commutes with both ends connected:
+          </p>
+          <div class="eq">C_net(s) = (1 / T) · Σᵢ pᵢ · 1[home i in top s%] · 1[its destination in top s%]</div>
+          <p><strong>Coverage by core reach.</strong> A single line extends outward from downtown and everything inside
+            is connected:
+          </p>
+          <div class="eq">R = (s / 100) · X (X = full city radius)
+            <br />C_reach(s) = (1 / T) · Σᵢ pᵢ · 1[xᵢ ≤ R] · 1[x of its destination ≤ R]
+          </div>
+
+
+        </div>
+      </details>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      "use strict";
+      const S = { Lh: 5.5, Ld: 2.2, sigma: 0.91, sh: 0.54, Nh: 300, Nd: 50 };
+      const X_MAX = 28, NB = 22;
+      let Uh = [], Ud = [], Ua = [], Zd = [], Zh = [], city = null;
+
+      const normal = () => { const u1 = Math.random() || 1e-9, u2 = Math.random(); return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2); };
+      function resample() {
+        Uh = Array.from({ length: 600 }, Math.random); Ud = Array.from({ length: 150 }, Math.random);
+        Ua = Array.from({ length: 600 }, Math.random); Zd = Array.from({ length: 150 }, normal); Zh = Array.from({ length: 600 }, normal);
+      }
+
+      function buildCity() {
+        const hsz = Zh.slice(0, S.Nh).map(z => Math.exp(S.sh * z));
+        const hx = Uh.slice(0, S.Nh).map(u => -S.Lh * Math.log(u));
+        const dx = Ud.slice(0, S.Nd).map(u => -S.Ld * Math.log(u));
+        const w = Zd.slice(0, S.Nd).map(z => Math.exp(S.sigma * z));
+        const wsum = w.reduce((a, b) => a + b, 0) || 1;
+        const cum = []; let acc = 0; for (const wi of w) { acc += wi / wsum; cum.push(acc); } if (cum.length) cum[cum.length - 1] = 1;
+        const assign = new Array(S.Nh), load = new Array(S.Nd).fill(0);
+        for (let i = 0; i < S.Nh; i++) { const u = Ua[i]; let j = 0; while (j < cum.length - 1 && u > cum[j]) j++; assign[i] = j; load[j] += hsz[i]; }
+        const total = hsz.reduce((a, b) => a + b, 0) || 1;
+
+        // curve 1 — network size (connect biggest homes & hubs first)
+        const homeRank = hsz.map((v, i) => i).sort((a, b) => hsz[b] - hsz[a]);
+        const destRank = load.map((l, j) => j).sort((a, b) => load[b] - load[a]);
+        const destHomes = Array.from({ length: S.Nd }, () => []); for (let i = 0; i < S.Nh; i++)destHomes[assign[i]].push(i);
+        const curveNet = new Array(101); {
+          const hon = new Uint8Array(S.Nh), don = new Uint8Array(S.Nd); let sv = 0, nh = 0, nd = 0;
+          for (let s = 0; s <= 100; s++) {
+            const tnh = Math.round(s / 100 * S.Nh), tnd = Math.round(s / 100 * S.Nd);
+            while (nh < tnh) { const idx = homeRank[nh]; hon[idx] = 1; if (don[assign[idx]]) sv += hsz[idx]; nh++; }
+            while (nd < tnd) { const jd = destRank[nd]; don[jd] = 1; for (const hi of destHomes[jd]) if (hon[hi]) sv += hsz[hi]; nd++; }
+            curveNet[s] = sv / total * 100;
+          }
+        }
+        // curve 2 — core reach (one line extending out from downtown)
+        const curveReach = new Array(101); {
+          const hist = new Array(102).fill(0);
+          for (let i = 0; i < S.Nh; i++) { const t = Math.max(hx[i], dx[assign[i]]) / X_MAX * 100; hist[Math.min(101, Math.max(0, Math.ceil(t)))] += hsz[i]; }
+          let run = 0, bi = 0; for (let s = 0; s <= 100; s++) { while (bi <= s) { run += hist[bi]; bi++; } curveReach[s] = run / total * 100; }
+        }
+        // bins for the skyline
+        const bins = Array.from({ length: NB }, (_, i) => ({ home: 0, dest: 0, homeCount: 0, destCount: 0, i }));
+        const binOf = x => Math.min(NB - 1, Math.floor(x / X_MAX * NB));
+        hx.forEach((x, i) => { if (x < X_MAX) { bins[binOf(x)].home += hsz[i]; bins[binOf(x)].homeCount++; } });
+        dx.forEach((x, j) => { if (x < X_MAX) { bins[binOf(x)].dest += load[j]; bins[binOf(x)].destCount++; } });
+        const maxHome = Math.max(1, ...bins.map(b => b.home)), maxDest = Math.max(1, ...bins.map(b => b.dest));
+        city = { curveNet, curveReach, bins, maxHome, maxDest, total };
+      }
+
+      // ---------- skyline ----------
+      const sky = document.getElementById('sky');
+      function shade(hex, f) { const n = parseInt(hex.slice(1), 16); let r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255; const c = v => Math.max(0, Math.min(255, Math.round(v * f))); return `rgb(${c(r)},${c(g)},${c(b)})`; }
+      const HOME = '#7BA6EC', DEST = '#F5897F';
+      function roofTop(ctx, left, y, w, rh, style, col) {
+        ctx.fillStyle = col;
+        if (style === 1) { ctx.beginPath(); ctx.moveTo(left - 1, y); ctx.lineTo(left + w / 2, y - rh); ctx.lineTo(left + w + 1, y); ctx.closePath(); ctx.fill(); }       // peaked
+        else if (style === 2) { ctx.beginPath(); ctx.moveTo(left - 1, y); ctx.lineTo(left + w + 1, y - rh); ctx.lineTo(left + w + 1, y); ctx.closePath(); ctx.fill(); } // right-angle / shed
+        else { ctx.fillRect(left, y - 3, w, 3); }
+      }                                                                                                   // flat parapet
+      function building(ctx, left, ground, w, h, hex, kind, seed) {
+        const style = seed % 3, rh = style === 0 ? 3 : Math.min(w * 0.55, 13);
+        const wallH = Math.max(8, h - rh), y = ground - wallH;
+        ctx.fillStyle = hex; ctx.fillRect(left, y, w, wallH);
+        if (kind === 'home') {                                                   // homes: small square windows
+          const cols = Math.max(1, Math.floor(w / 9)), rows = Math.floor(wallH / 13), gx = w / cols;
+          ctx.fillStyle = 'rgba(255,255,255,0.52)';
+          for (let c = 0; c < cols; c++)for (let r = 0; r < rows; r++)ctx.fillRect(left + c * gx + gx * 0.30, y + r * 13 + 5, gx * 0.40, 5);
+        } else {                                                             // destinations: horizontal office floor-bands
+          ctx.fillStyle = 'rgba(255,255,255,0.36)';
+          for (let r = 0; r < Math.floor(wallH / 9); r++)ctx.fillRect(left + 2, y + r * 9 + 4, w - 4, 3);
+        }
+        roofTop(ctx, left, y, w, rh, style, shade(hex, 0.8));
+      }
+      function houses(ctx, left, ground, w, hex, n, seed) {
+        const hw = Math.min(w / n, 16), hh = Math.max(15, hw * 1.1), rc = shade(hex, 0.82);
+        for (let k = 0; k < n; k++) {
+          const x = left + k * (w / n) + (w / n - hw) / 2, y = ground - hh; ctx.fillStyle = hex; ctx.fillRect(x, y, hw, hh);
+          roofTop(ctx, x, y, hw, Math.min(hw * 0.6, 10), ((seed + k) % 2) ? 1 : 2, rc);
+        }
+      }
+      function drawSkyline() {
+        const ctx = sky.getContext('2d'), dpr = Math.max(1, devicePixelRatio || 1);
+        const W = sky.clientWidth || 900, H = Math.max(230, Math.round(W * 0.32));
+        sky.style.height = H + 'px'; sky.width = W * dpr; sky.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
+        if (!city) return;
+        const ground = H - 26, availH = ground - H * 0.10, total = city.total, SCALE = availH * 1.6;
+        ctx.strokeStyle = 'rgba(25,26,21,0.20)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0, ground + 0.5); ctx.lineTo(W, ground + 0.5); ctx.stroke();
+        const slot = W / NB, bw = Math.max(9, slot * 0.42), gap = slot * 0.05, houseCut = availH * 0.16;
+        for (let i = 0; i < NB; i++) {
+          const b = city.bins[i], cx = (i + 0.5) * slot;
+          const hH = Math.min(availH, (b.home / total) * SCALE), dH = Math.min(availH, (b.dest / total) * SCALE);
+          const homeLeft = cx - bw - gap / 2, destLeft = cx + gap / 2;
+          if (b.home > 0) {
+            if (hH < houseCut) houses(ctx, homeLeft, ground, bw, HOME, Math.min(3, Math.max(1, b.homeCount)), i * 2 + 1);
+            else building(ctx, homeLeft, ground, bw, hH, HOME, 'home', i * 2 + 1);
+          }
+          if (b.dest > 0) {
+            if (dH < houseCut) houses(ctx, destLeft, ground, bw, DEST, Math.min(2, Math.max(1, b.destCount)), i * 3 + 2);
+            else building(ctx, destLeft, ground, bw, dH, DEST, 'dest', i * 3 + 2);
+          }
+        }
+        ctx.font = '11px "Space Mono", monospace'; ctx.fillStyle = '#8f9187';
+        ctx.textAlign = 'left'; ctx.fillText('◄ Downtown', 4, H - 8);
+        ctx.textAlign = 'right'; ctx.fillText('Suburbs ►', W - 4, H - 8);
+      }
+
+      // ---------- charts ----------
+      const M = { L: 42, R: 14, T: 16, B: 30 };
+      const charts = [
+        { cv: document.getElementById('chartNet'), key: 'curveNet', diag: true, xlabel: 'network size', line: '#4E82D8', hover: null },
+        { cv: document.getElementById('chartReach'), key: 'curveReach', diag: false, xlabel: 'core reach', line: '#4E82D8', hover: null },
+      ];
+      function drawChart(o) {
+        const cv = o.cv, ctx = cv.getContext('2d'), dpr = Math.max(1, devicePixelRatio || 1);
+        const W = cv.clientWidth || 360, H = Math.max(210, Math.round(W * 0.74));
+        cv.style.height = H + 'px'; cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
+        if (!city) return;
+        const pw = W - M.L - M.R, ph = H - M.T - M.B, xp = s => M.L + s / 100 * pw, yp = v => M.T + (1 - v / 100) * ph, curve = city[o.key];
+        ctx.font = '11px "Space Mono", monospace';
+        ctx.strokeStyle = '#E4E5DE'; ctx.fillStyle = '#9c9e94'; ctx.lineWidth = 1; ctx.textAlign = 'right';
+        for (let g = 0; g <= 100; g += 25) { ctx.beginPath(); ctx.moveTo(M.L, yp(g)); ctx.lineTo(M.L + pw, yp(g)); ctx.stroke(); ctx.fillText(g + '%', M.L - 6, yp(g) + 3); }
+        ctx.textAlign = 'center'; for (let g = 0; g <= 100; g += 50)ctx.fillText(g + '%', xp(g), H - 9);
+        if (o.diag) { ctx.strokeStyle = '#CBCCC4'; ctx.setLineDash([4, 4]); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(xp(0), yp(0)); ctx.lineTo(xp(100), yp(100)); ctx.stroke(); ctx.setLineDash([]); }
+        ctx.strokeStyle = o.line; ctx.lineWidth = 3; ctx.beginPath();
+        for (let s = 0; s <= 100; s++) { const X = xp(s), Y = yp(curve[s]); s === 0 ? ctx.moveTo(X, Y) : ctx.lineTo(X, Y); } ctx.stroke();
+        ctx.fillStyle = '#9c9e94'; ctx.textAlign = 'left'; ctx.fillText(o.xlabel + ' →', M.L, M.T - 3);
+        if (o.hover != null) {
+          const s = o.hover, X = xp(s), Y = yp(curve[s]);
+          ctx.strokeStyle = 'rgba(78,130,216,0.45)'; ctx.setLineDash([3, 3]); ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.moveTo(X, yp(0)); ctx.lineTo(X, Y); ctx.moveTo(M.L, Y); ctx.lineTo(X, Y); ctx.stroke(); ctx.setLineDash([]);
+          ctx.fillStyle = DEST; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(X, Y, 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+          const txt = s + '% → ' + Math.round(curve[s]) + '% served';
+          ctx.font = '700 12px "Space Mono", monospace'; ctx.textAlign = s > 60 ? 'right' : 'left';
+          const tx = s > 60 ? X - 9 : X + 9, ty = Math.max(M.T + 12, Y - 10);
+          ctx.lineWidth = 3; ctx.strokeStyle = '#fff'; ctx.strokeText(txt, tx, ty); ctx.fillStyle = '#191A15'; ctx.fillText(txt, tx, ty);
+        }
+      }
+      function drawCharts() { charts.forEach(drawChart); }
+      charts.forEach(o => {
+        o.cv.addEventListener('mousemove', e => {
+          const r = o.cv.getBoundingClientRect(); const pw = r.width - M.L - M.R;
+          let s = Math.round((e.clientX - r.left - M.L) / pw * 100); s = Math.max(0, Math.min(100, s)); o.hover = s; drawChart(o);
+        });
+        o.cv.addEventListener('mouseleave', () => { o.hover = null; drawChart(o); });
+      });
+
+      function redrawAll() { drawSkyline(); drawCharts(); }
+      function rebuild() { buildCity(); redrawAll(); }
+
+      // ---------- density <-> params ----------
+      const lvlWord = d => d < 0.34 ? 'Low' : d < 0.67 ? 'Medium' : 'High';
+      function mapHome(d) { S.Lh = +(8 - 5.5 * d).toFixed(2); S.sh = +(1.2 * d).toFixed(2); }
+      function mapDest(d) { S.Ld = +(7.5 - 6.5 * d).toFixed(2); S.sigma = +(1.3 * d).toFixed(2); }
+      function syncAdv() {
+        const set = (id, v) => { const el = document.getElementById(id); el.value = v; document.getElementById(id + '-v').textContent = ('' + v); };
+        set('lh', S.Lh); set('sh', S.sh); set('ld', S.Ld); set('sg', S.sigma);
+      }
+      document.getElementById('hd').addEventListener('input', e => { const d = +e.target.value / 100; mapHome(d); document.getElementById('hd-v').textContent = lvlWord(d); syncAdv(); rebuild(); });
+      document.getElementById('dd').addEventListener('input', e => { const d = +e.target.value / 100; mapDest(d); document.getElementById('dd-v').textContent = lvlWord(d); syncAdv(); rebuild(); });
+
+      // advanced direct controls
+      function advBind(id, key, fmt) {
+        const el = document.getElementById(id), out = document.getElementById(id + '-v');
+        el.addEventListener('input', () => { S[key] = parseFloat(el.value); out.textContent = fmt(S[key]); rebuild(); });
+      }
+      advBind('lh', 'Lh', v => v.toFixed(1)); advBind('sh', 'sh', v => v.toFixed(2));
+      advBind('ld', 'Ld', v => v.toFixed(1)); advBind('sg', 'sigma', v => v.toFixed(2));
+      advBind('nh', 'Nh', v => String(v)); advBind('nd', 'Nd', v => String(v));
+      document.getElementById('resample').addEventListener('click', () => { resample(); rebuild(); });
+
+      const debounce = (fn, ms = 60) => { let t; return () => { clearTimeout(t); t = setTimeout(fn, ms); }; };
+      new ResizeObserver(debounce(drawSkyline)).observe(sky);
+      charts.forEach(o => new ResizeObserver(debounce(() => drawChart(o))).observe(o.cv));
+
+      // init
+      resample();
+      mapHome(+document.getElementById('hd').value / 100); mapDest(+document.getElementById('dd').value / 100);
+      document.getElementById('hd-v').textContent = lvlWord(+document.getElementById('hd').value / 100);
+      document.getElementById('dd-v').textContent = lvlWord(+document.getElementById('dd').value / 100);
+      syncAdv(); buildCity(); redrawAll();
+      requestAnimationFrame(redrawAll);
+    })();
+  </script>
 </body>
+
 </html>
